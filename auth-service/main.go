@@ -12,6 +12,7 @@ import (
 	"github.com/upload-media-auth/config"
 	db "github.com/upload-media-auth/database"
 	auth_helpers "github.com/upload-media-auth/helpers"
+	"github.com/upload-media-auth/producers"
 	"github.com/upload-media-auth/types"
 
 	"github.com/labstack/echo/v4"
@@ -88,11 +89,21 @@ func authSignup(c echo.Context) error {
 }
 
 func uploadPicture (c echo.Context) error {
-	extractedUserId, extractionError := auth_helpers.ExtractUserId(c);
+	extractedUserId, extractionError := auth_helpers.ExtractUserId(c)
 	if extractionError != nil {
 		return c.JSON(http.StatusForbidden, types.LoginUserResponse{
 			Status: false,
 			ErrMsg: extractionError.Error(),
+		})
+	}
+
+	// Get logged in user Data : 
+	loggedInUser, fetchLoggedInUserError := auth_helpers.FetchUserInfoByID(extractedUserId)
+
+	if fetchLoggedInUserError != nil {
+		return c.JSON(http.StatusBadRequest, types.LoginUserResponse{
+			Status: false,
+			ErrMsg: fetchLoggedInUserError.Error(),
 		})
 	}
 
@@ -137,8 +148,10 @@ func uploadPicture (c echo.Context) error {
 	}
 	
 	// Call to email service
-
-	
+	producers.PublishToQueue("email-queue", types.ProducedOrConsumedMessage{
+		Email: loggedInUser.Email,
+		PictureURL: uploadResult.SecureURL,
+	})
 
 	return c.JSON(http.StatusAccepted, types.UploadPicResponse{
 		Status: true,

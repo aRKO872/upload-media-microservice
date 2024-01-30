@@ -32,3 +32,8 @@ type Claims struct {
 	UserId string 
 	jwt.RegisteredClaims
 }
+
+type ProducedOrConsumedMessage struct {
+	Email string					`json:"email"`
+	PictureURL string			`json:"picture_url"`
+}

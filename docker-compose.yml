@@ -1,6 +1,16 @@
 version: '3.9'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
   auth-service:
     build:
       context: ./auth-service
@@ -8,6 +18,7 @@ services:
       - "8085:8085"
     depends_on:
       - postgres
+      - rabbitmq
     
   db-service:
     build:
@@ -16,6 +27,15 @@ services:
       - "8086:8086"
     depends_on:
       - postgres
+
+  email-service:
+    build:
+      context: ./email-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - postgres
+      - rabbitmq
 
   postgres:
     build:

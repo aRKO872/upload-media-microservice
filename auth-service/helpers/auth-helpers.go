@@ -157,3 +157,37 @@ func PersistPicture (userId string, uploadURL string) (*types.Picture, error) {
 		PictureURL: uploadURL,
 	}, nil
 }
+
+func FetchUserInfoByID (userId string) (*types.User, error) {
+	rows, err := db.GetDBInstance().Query("SELECT id, name, email, password FROM users WHERE id=$1;", userId)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, errors.New(err.Error())
+	}
+	defer rows.Close()
+
+	var users []types.User
+
+	for rows.Next() {
+		var user types.User
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password)
+		if err != nil {
+			log.Println("Error scanning row :", err)
+			return nil, errors.New(err.Error())
+		}
+		users = append(users, user)
+	}
+
+	// Check for errors from iterating over rows
+	if err := rows.Err(); err != nil {
+		log.Println("Error iterating over rows:", err)
+		return nil, errors.New(err.Error())
+	}
+
+	if len(users) == 0 {
+		return nil, errors.New("no users with this user ID exist")
+	}
+
+	result := users[0];
+	return &result, nil;
+}
